@@ -96,12 +96,23 @@ public class Player implements sunshine.sim.Player {
                 break;
             }
         }
+        Collections.sort(clusterAnchors, 
+            new Comparator(){
+                @Override
+                public int compare(Object o1, Object o2) {
+                    Point p1 = (Point) o1;
+                    Point p2 = (Point) o2;
+                    return - (int)Math.signum(p1.x*p1.x + p1.y*p1.y - p2.x*p2.x - p2.y*p2.y);
+               }
+            }
+        );
+        Collections.sort(sortedClusters);
+        System.out.println(sortedClusters.size());        
         bucketClusters();
         System.out.println(bucketAnchors.size());
         System.out.println(buckets.size());
         System.out.println(bucketAnchors.get(0).size());
         System.out.println(buckets.get(0).size());
-        Collections.sort(sortedClusters);
     }
 
 
@@ -221,7 +232,7 @@ public class Player implements sunshine.sim.Player {
 
 
 
-
+    /*
 
     public List<Point> closestAnchors(List<Point> anchorsCopy,int bucketSize){
         List<Point> anchors = new ArrayList<Point>(anchorsCopy);
@@ -250,6 +261,40 @@ public class Player implements sunshine.sim.Player {
         }
         return result;
     }
+    */
+    public void bucketClusters(){
+    	List<Point> anchors = new ArrayList<Point>(clusterAnchors);
+        double angle = 2*90.0/numTractors;
+        List<Integer> anchorBucketAssigner = new ArrayList<Integer>();
+        double slope;
+        for(int i=0;i<anchors.size();i++){
+        	slope = Math.toDegrees(Math.atan((double) anchors.get(i).y/anchors.get(i).x));
+        	anchorBucketAssigner.add((int) Math.floor(slope/angle));
+        }
+        counter = 0;
+        for(int i=0;i<(numTractors/2);i++){
+    	    List<Cluster> temp = new ArrayList<Cluster>();
+	        List<Point> temp2 = new ArrayList<Point>();
+        	for(int j=0;j<anchorBucketAssigner.size();j++){
+        		if(anchorBucketAssigner.get(j)==i){
+        			Point p = anchors.get(j);
+					temp2.add(p);
+			        for(int k=0;j<sortedClusters.size();k++){
+                	    if ((sortedClusters.get(k).getAnchor().x==p.x)&&(sortedClusters.get(k).getAnchor().y==p.y)){
+                    	    temp.add(sortedClusters.get(k));
+                    	    counter += 1;
+                        	break;
+                    	}
+                	}
+        		}
+        	}
+        	buckets.add(temp);
+        	bucketAnchors.add(temp2);
+        }
+        System.out.println("This is Sparta!!! XD XD");        
+        System.out.println(counter);
+    }
+    /*
     public void bucketClusters(){
         int bucketSize = (int) Math.floor(2.0*sortedClusters.size()/numTractors);
         int times = sortedClusters.size() - bucketSize*numTractors/2;
@@ -288,20 +333,22 @@ public class Player implements sunshine.sim.Player {
             times-=1;
         }
     }
-
+	*/
     private void oneTrip(Tractor tractor) {
 
         int index = getBin(tractor);
         if (isHelper(tractor) && buckets.get(index).size() != 0) {
         	List<Cluster> clusters = buckets.get(index);
-        	Cluster c = clusters.remove(clusters.size() - 1);
+            //Changed to 0 from anchors.size()-1 to sweep from outside to inside 
+        	Cluster c = clusters.remove(0);
         	System.out.println(clusters.size());
             condenseCluster(tractor, c.getAnchor(), c.getOthers());
         }
         else if (bucketAnchors.get(index).size() != 0) {
             // haul clusters back with trailer
             List<Point> anchors = bucketAnchors.get(index);
-            Point p = anchors.remove(anchors.size() - 1);
+            //Changed to 0 from anchors.size()-1 to sweep from outside to inside 
+            Point p = anchors.remove(0);
             collectWithTrailer(tractor, p);
         }
         else {
